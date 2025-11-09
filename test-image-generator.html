@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>テスト画像生成ツール</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #667eea;
+            text-align: center;
+        }
+        canvas {
+            border: 2px solid #ddd;
+            margin: 20px 0;
+            display: block;
+            max-width: 100%;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        .controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .description {
+            background: #f0f7ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 テスト画像生成ツール</h1>
+        
+        <div class="description">
+            <p><strong>このツールについて:</strong></p>
+            <p>姿勢解析アプリをテストするための、赤マーカー付きの人体画像を生成します。
+            実際の撮影の前に、アプリの動作を確認できます。</p>
+        </div>
+        
+        <div class="controls">
+            <button onclick="generateFrontView()">正面画像を生成</button>
+            <button onclick="generateSideView()">側面画像を生成</button>
+            <button onclick="generateFootView()">足画像を生成</button>
+            <button onclick="downloadImage()">画像をダウンロード</button>
+        </div>
+        
+        <canvas id="testCanvas" width="400" height="600"></canvas>
+        
+        <div class="description">
+            <h3>使い方:</h3>
+            <ol>
+                <li>上のボタンで画像を生成</li>
+                <li>「画像をダウンロード」でPNG形式で保存</li>
+                <li>保存した画像を姿勢解析アプリで読み込む</li>
+                <li>マーカー検出が正しく動作するか確認</li>
+            </ol>
+            
+            <h3>テスト内容:</h3>
+            <ul>
+                <li>✅ 赤マーカーの検出精度</li>
+                <li>✅ 線の描画</li>
+                <li>✅ 角度計算の正確性</li>
+                <li>✅ 手動補正機能</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        const canvas = document.getElementById('testCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        /**
+         * 正面画像を生成
+         */
+        function generateFrontView() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 背景（グラデーション）
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#e3f2fd');
+            gradient.addColorStop(1, '#bbdefb');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 簡単な人体シルエット
+            drawSimpleBody(200, 100, 'front');
+            
+            // マーカー位置
+            const markers = [
+                { x: 150, y: 150, label: '左肩' },
+                { x: 250, y: 150, label: '右肩' },
+                { x: 160, y: 250, label: '左骨盤' },
+                { x: 240, y: 250, label: '右骨盤' },
+                { x: 170, y: 380, label: '左膝' },
+                { x: 230, y: 380, label: '右膝' },
+                { x: 175, y: 520, label: '左足首' },
+                { x: 225, y: 520, label: '右足首' }
+            ];
+            
+            // マーカーを描画
+            markers.forEach(marker => {
+                drawMarker(marker.x, marker.y, marker.label);
+            });
+            
+            // タイトル
+            ctx.fillStyle = 'black';
+            ctx.font = 'bold 20px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('正面ビュー - テスト画像', canvas.width / 2, 30);
+        }
+        
+        /**
+         * 側面画像を生成
+         */
+        function generateSideView() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 背景
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#f3e5f5');
+            gradient.addColorStop(1, '#e1bee7');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 簡単な人体シルエット（側面）
+            drawSimpleBody(200, 100, 'side');
+            
+            // マーカー位置
+            const markers = [
+                { x: 220, y: 120, label: '耳' },
+                { x: 200, y: 180, label: '肩' },
+                { x: 190, y: 280, label: '腰' },
+                { x: 195, y: 400, label: '膝' },
+                { x: 200, y: 530, label: '足首' }
+            ];
+            
+            // マーカーを描画
+            markers.forEach(marker => {
+                drawMarker(marker.x, marker.y, marker.label);
+            });
+            
+            // タイトル
+            ctx.fillStyle = 'black';
+            ctx.font = 'bold 20px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('側面ビュー - テスト画像', canvas.width / 2, 30);
+        }
+        
+        /**
+         * 足画像を生成
+         */
+        function generateFootView() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 背景
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#fff3e0');
+            gradient.addColorStop(1, '#ffe0b2');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 足の輪郭
+            ctx.strokeStyle = '#8d6e63';
+            ctx.lineWidth = 3;
+            
+            // 左足
+            ctx.beginPath();
+            ctx.ellipse(140, 300, 40, 80, 0, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            // 右足
+            ctx.beginPath();
+            ctx.ellipse(260, 300, 40, 80, 0, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            // マーカー位置
+            const markers = [
+                { x: 140, y: 230, label: '左つま先' },
+                { x: 260, y: 230, label: '右つま先' },
+                { x: 120, y: 300, label: '左土踏まず' },
+                { x: 280, y: 300, label: '右土踏まず' },
+                { x: 140, y: 370, label: '左踵' },
+                { x: 260, y: 370, label: '右踵' }
+            ];
+            
+            // マーカーを描画
+            markers.forEach(marker => {
+                drawMarker(marker.x, marker.y, marker.label);
+            });
+            
+            // タイトル
+            ctx.fillStyle = 'black';
+            ctx.font = 'bold 20px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('足（真上）ビュー - テスト画像', canvas.width / 2, 30);
+        }
+        
+        /**
+         * 簡単な人体を描画
+         */
+        function drawSimpleBody(x, y, view) {
+            ctx.strokeStyle = '#90a4ae';
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            
+            if (view === 'front') {
+                // 頭
+                ctx.beginPath();
+                ctx.arc(x, y + 30, 25, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // 胴体
+                ctx.beginPath();
+                ctx.moveTo(x, y + 55);
+                ctx.lineTo(x, y + 200);
+                ctx.stroke();
+                
+                // 肩
+                ctx.beginPath();
+                ctx.moveTo(x - 50, y + 80);
+                ctx.lineTo(x + 50, y + 80);
+                ctx.stroke();
+                
+                // 左腕
+                ctx.beginPath();
+                ctx.moveTo(x - 50, y + 80);
+                ctx.lineTo(x - 70, y + 180);
+                ctx.stroke();
+                
+                // 右腕
+                ctx.beginPath();
+                ctx.moveTo(x + 50, y + 80);
+                ctx.lineTo(x + 70, y + 180);
+                ctx.stroke();
+                
+                // 左脚
+                ctx.beginPath();
+                ctx.moveTo(x - 10, y + 200);
+                ctx.lineTo(x - 30, y + 450);
+                ctx.stroke();
+                
+                // 右脚
+                ctx.beginPath();
+                ctx.moveTo(x + 10, y + 200);
+                ctx.lineTo(x + 30, y + 450);
+                ctx.stroke();
+                
+            } else if (view === 'side') {
+                // 頭
+                ctx.beginPath();
+                ctx.arc(x + 20, y + 20, 25, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // 胴体
+                ctx.beginPath();
+                ctx.moveTo(x, y + 80);
+                ctx.lineTo(x - 10, y + 230);
+                ctx.stroke();
+                
+                // 腕
+                ctx.beginPath();
+                ctx.moveTo(x, y + 100);
+                ctx.lineTo(x + 40, y + 180);
+                ctx.stroke();
+                
+                // 脚
+                ctx.beginPath();
+                ctx.moveTo(x - 5, y + 300);
+                ctx.lineTo(x, y + 460);
+                ctx.stroke();
+            }
+        }
+        
+        /**
+         * 赤マーカーを描画
+         */
+        function drawMarker(x, y, label) {
+            // 外側の白い縁
+            ctx.beginPath();
+            ctx.arc(x, y, 12, 0, Math.PI * 2);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            
+            // 赤いマーカー
+            ctx.beginPath();
+            ctx.arc(x, y, 10, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgb(255, 0, 0)';  // 純粋な赤
+            ctx.fill();
+            
+            // ラベル（小さく）
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+            ctx.font = '10px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(label, x, y + 25);
+        }
+        
+        /**
+         * 画像をダウンロード
+         */
+        function downloadImage() {
+            const link = document.createElement('a');
+            link.download = `test_image_${Date.now()}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            
+            alert('画像をダウンロードしました！\nこの画像を姿勢解析アプリで読み込んでテストしてください。');
+        }
+        
+        // 初期表示
+        generateFrontView();
+    </script>
+</body>
+</html>

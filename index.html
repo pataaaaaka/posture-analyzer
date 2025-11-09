@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>姿勢・足形解析アプリ</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- ローディング画面 -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="spinner"></div>
+        <p>AI モデル読み込み中...</p>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1>🏃 姿勢・足形解析アプリ</h1>
+            <p class="subtitle">赤マーカーを体に貼って撮影してください</p>
+        </header>
+
+        <!-- ステップインジケーター -->
+        <div class="step-indicator">
+            <div class="step active" data-step="1">
+                <span class="step-number">1</span>
+                <span class="step-label">正面</span>
+            </div>
+            <div class="step" data-step="2">
+                <span class="step-number">2</span>
+                <span class="step-label">側面</span>
+            </div>
+            <div class="step" data-step="3">
+                <span class="step-number">3</span>
+                <span class="step-label">足上</span>
+            </div>
+            <div class="step" data-step="4">
+                <span class="step-number">4</span>
+                <span class="step-label">足後</span>
+            </div>
+        </div>
+
+        <!-- マーカーガイド -->
+        <div class="guide-section" id="markerGuide">
+            <h3>📍 マーカー位置ガイド</h3>
+            <div class="guide-content" id="guideContent">
+                <div class="guide-item active" data-view="front">
+                    <h4>正面撮影</h4>
+                    <ul>
+                        <li>耳の穴（見えれば）</li>
+                        <li>左右の肩峰</li>
+                        <li>左右の前上腸骨棘（骨盤前側の出っ張り）</li>
+                        <li>左右の膝中央</li>
+                        <li>左右のくるぶし</li>
+                    </ul>
+                </div>
+                <div class="guide-item" data-view="side">
+                    <h4>側面撮影</h4>
+                    <ul>
+                        <li>耳の穴</li>
+                        <li>肩峰</li>
+                        <li>大転子（太ももの付け根外側）</li>
+                        <li>膝中央</li>
+                        <li>外くるぶし</li>
+                    </ul>
+                </div>
+                <div class="guide-item" data-view="foot-top">
+                    <h4>足真上撮影</h4>
+                    <ul>
+                        <li>つま先の両側</li>
+                        <li>土踏まず内側（あれば）</li>
+                        <li>踵の両側</li>
+                    </ul>
+                </div>
+                <div class="guide-item" data-view="foot-back">
+                    <h4>踵後方撮影</h4>
+                    <ul>
+                        <li>アキレス腱上部</li>
+                        <li>踵中央</li>
+                        <li>床との接地点</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 画像入力セクション -->
+        <div class="input-section">
+            <input type="file" id="imageInput" accept="image/*" capture="environment" style="display: none;">
+            <button class="btn btn-primary" id="cameraBtn">
+                📷 写真を撮影/選択
+            </button>
+            <div class="view-selector">
+                <label>撮影種類:</label>
+                <select id="viewType">
+                    <option value="front">正面</option>
+                    <option value="side">側面</option>
+                    <option value="foot-top">足（真上）</option>
+                    <option value="foot-back">足（後方）</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Canvas 表示エリア -->
+        <div class="canvas-container" id="canvasContainer" style="display: none;">
+            <canvas id="imageCanvas"></canvas>
+            <div class="canvas-overlay">
+                <div class="marker-legend">
+                    <span class="legend-item">🔴 赤マーカー</span>
+                    <span class="legend-item">🔵 AI検出</span>
+                    <span class="legend-item">📏 接続線</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 操作ボタン -->
+        <div class="action-buttons" id="actionButtons" style="display: none;">
+            <button class="btn btn-secondary" id="analyzeBtn">
+                🔍 自動解析
+            </button>
+            <button class="btn btn-secondary" id="manualBtn">
+                ✏️ 手動補正
+            </button>
+            <button class="btn btn-secondary" id="resetBtn">
+                🔄 リセット
+            </button>
+        </div>
+
+        <!-- 手動補正モード時の説明 -->
+        <div class="manual-mode-info" id="manualModeInfo" style="display: none;">
+            <p>⚠️ 手動補正モード：マーカーをドラッグして位置を調整できます</p>
+            <button class="btn btn-success" id="confirmManualBtn">✓ 補正完了</button>
+        </div>
+
+        <!-- 結果表示エリア -->
+        <div class="results-section" id="resultsSection" style="display: none;">
+            <h3>📊 解析結果</h3>
+            <div id="resultCards"></div>
+            
+            <button class="btn btn-primary" id="saveBtn">
+                💾 結果画像を保存
+            </button>
+            <button class="btn btn-secondary" id="nextStepBtn">
+                ➡️ 次の撮影へ
+            </button>
+        </div>
+
+        <!-- エラー表示 -->
+        <div class="error-message" id="errorMessage" style="display: none;"></div>
+
+        <!-- 使い方 -->
+        <div class="instructions">
+            <h3>📖 使い方</h3>
+            <ol>
+                <li>体の各ポイントに赤いマーカー（シールやテープ）を貼る</li>
+                <li>写真を撮影または選択</li>
+                <li>自動解析でマーカーを検出</li>
+                <li>必要に応じて手動で位置を補正</li>
+                <li>結果を確認して画像を保存</li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- TensorFlow.js と MediaPipe -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
+    
+    <!-- メインスクリプト -->
+    <script src="main.js"></script>
+</body>
+</html>
